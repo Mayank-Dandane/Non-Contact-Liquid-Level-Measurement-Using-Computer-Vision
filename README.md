@@ -1,84 +1,135 @@
-Project Summary — Non-Contact Liquid Level Measurement Using Computer Vision
+# 🧪 Non-Contact Liquid Level Measurement using Computer Vision
 
-What We Built
-A real-time, non-contact liquid level measurement system using a standard USB webcam and Python-based image processing. The system detects the water surface in any transparent container and outputs the measurement in millimeters — without any physical sensor touching the liquid.
+A real-time, non-contact liquid level measurement system using a standard USB webcam and Python-based image processing. The system detects the water surface in a transparent container and outputs the level in millimeters — without any physical sensor.
 
-Tech Stack
+---
 
-Language: Python 3
-Libraries: OpenCV (cv2), NumPy, Matplotlib, SciPy
-Hardware: USB webcam (720p), Windows PC
-Backend: DirectShow (CAP_DSHOW) for reliable Windows camera access
+## 🚀 Overview
 
+This project uses computer vision techniques to measure liquid levels in real time. By analyzing video frames from a webcam, the system identifies the liquid surface and converts pixel data into real-world measurements.
 
-System Architecture — 3 Core Modules
-1. calibrate.py — Calibration Engine
+✔ No physical sensors  
+✔ Works with any transparent container  
+✔ Real-time measurement  
 
-Opens webcam feed with mouse callback registration
-User clicks on known reference marks on the container (100ml to 900ml markings)
-Each click captures the pixel Y-coordinate mapped to a known real-world height in mm
-Runs NumPy linear regression (np.polyfit) on the pixel-Y vs real-mm dataset
-Computes R² (coefficient of determination) to evaluate calibration quality
-Achieved R² = 0.9973 — confirming near-perfect linearity
-Saves slope, intercept, R², and all calibration points to calibration.json
+---
 
-2. main.py — Real-Time Detection Pipeline
-Every video frame goes through this pipeline:
-Raw BGR frame
-    ↓ cv2.cvtColor → Grayscale
-    ↓ cv2.GaussianBlur (7×7 kernel) → Noise suppression
-    ↓ cv2.Canny (threshold 20–60) → Edge map
-    ↓ cv2.dilate (3×3 kernel) → Edge strengthening
-    ↓ np.sum(edges, axis=1) → Row-wise edge strength array
-    ↓ np.convolve (5-point moving average) → Smoothed row sums
-    ↓ np.argmax → Strongest horizontal edge = water surface row
-    ↓ Proportional formula → level_mm
-Proportional conversion formula:
-level_mm = (1 - top_row_local / ROI_height_px) × real_ROI_height_mm
-Empty bottle detection:
+## 🔄 System Flow
 
-If max(row_sums_smooth) < EMPTY_THRESHOLD (80) → no valid water surface exists
-Green line locks to bottom of ROI, display shows "EMPTY / 0.0 mm"
-Prevents erratic readings from noise and container markings when bottle is empty
+![Process Flow](assets/image.png)
 
-ROI system:
+---
 
-User drags mouse to define a rectangular Region of Interest inside the container
-All processing is confined strictly within this ROI — ignores everything outside
-User presses H to input the real physical height of the ROI in mm — makes the system container-agnostic
+## 🛠️ Tech Stack
 
-Key controls:
+- **Language:** Python 3  
+- **Libraries:** OpenCV, NumPy, Matplotlib, SciPy  
+- **Hardware:** USB Webcam (720p), Windows PC  
+- **Camera Backend:** DirectShow (`CAP_DSHOW`)  
 
-L — logs current reading with timestamp to level_log.csv
-E — toggles edge view to visualize what Canny is detecting
-R — resets ROI
-H — sets real-world ROI height in mm
+---
 
-3. analysis.py — Performance Analysis
-Reads calibration.json and level_log.csv and generates a 4-panel Matplotlib report:
+## 🧠 System Architecture
 
-Calibration curve — pixel Y vs actual mm scatter plot with regression line and R² annotation
-Level vs time — time-series plot of all logged readings from CSV
-Error bar chart — absolute % error at each test level (green = ≤2mm, red = >2mm)
-Accuracy table — actual vs measured vs error vs % error for all test points
-Prints resolution (mm/pixel), max error, mean error, and standard deviation to terminal
+### 1. Calibration Module (`calibrate.py`)
+- User clicks reference points on container markings  
+- Maps pixel coordinates to real-world height (mm)  
+- Uses linear regression (`np.polyfit`)  
+- Achieved **R² = 0.9973** (high accuracy)  
+- Stores calibration data in `calibration.json`  
+
+---
+
+### 2. Real-Time Detection (`main.py`)
+
+Processing pipeline:
+Frame → Grayscale → Gaussian Blur → Canny Edge Detection → Dilation
+→ Row-wise Edge Sum → Smoothing → Argmax → Water Surface Detection
 
 
-Key Instrumentation Parameters Achieved
-ParameterValueCalibration R²0.9973Resolution~0.41 mm/pixelDetection methodCanny edge detectionFrame rate~10 FPSMeasurement unitMillimeters (mm)Calibration typeLinear regression + proportional ROI
+- Detects strongest horizontal edge as liquid surface  
+- Converts pixel position → real-world measurement (mm)  
+- Supports dynamic **ROI (Region of Interest)**  
+- Works across different container sizes  
 
-Key Technical Decisions Made
-Why Canny over HSV color thresholding:
-Initially attempted HSV-based water detection — failed because the bottle was opaque-looking under camera lighting and background noise was too high. Switched to Canny edge detection which detects the water surface purely based on intensity gradient — works regardless of water color or container color.
-Why proportional ROI mode over calibration.json:
-The calibration.json approach is container-specific — recalibration needed every time you change containers. The proportional ROI mode makes the system fully generic — draw ROI anywhere, enter its real height once, system works for any container.
-Why row-wise argmax over topmost edge:
-Initially used the topmost detected edge (first non-zero row). This caused false detections from bottle neck text and markings at the top of the ROI. Switching to argmax of smoothed row sums selects the strongest horizontal edge — which is always the water surface since it produces the most continuous, pixel-dense horizontal line in the ROI.
-Why EMPTY_THRESHOLD:
-Without it, an empty bottle still has edges from container walls, printed markings, and noise — causing the green line to jump randomly. The threshold gates detection: if no row has sufficient edge strength, the system locks to 0mm and displays EMPTY.
+#### Key Features:
+- **Empty Detection:** Prevents false readings when container is empty  
+- **ROI-based system:** User-defined measurement area  
+- **Real-time output (~10 FPS)**  
 
-Output Files Generated
-FileContentscalibration.jsonslope, intercept, R², calibration pointslevel_log.csvtimestamp + level_mm for each logged readinganalysis_report.png4-panel performance analysis figure
+#### Controls:
+- `L` → Log measurement to CSV  
+- `E` → Toggle edge view  
+- `R` → Reset ROI  
+- `H` → Set real-world ROI height  
 
-What Makes It Non-Contact
-The webcam is the only sensor — positioned 20–40cm from the container, at mid-height. Nothing touches the liquid at any point. The entire measurement chain is optical → digital → computational, making it safe for corrosive, sterile, or hazardous liquids where physical sensors would fail.
+---
+
+### 3. Analysis Module (`analysis.py`)
+
+Generates performance insights:
+
+- Calibration curve with regression line  
+- Level vs time graph  
+- Error analysis (absolute & percentage)  
+- Accuracy table  
+
+Outputs:
+- `analysis_report.png`  
+- Performance metrics (resolution, error, std deviation)  
+
+---
+
+## 📊 Performance
+
+| Parameter | Value |
+|----------|------|
+| Calibration R² | 0.9973 |
+| Resolution | ~0.41 mm/pixel |
+| Frame Rate | ~10 FPS |
+| Detection Method | Canny Edge Detection |
+
+---
+
+## ⚙️ Key Design Decisions
+
+- **Canny Edge Detection over HSV:** More robust under lighting variations  
+- **Argmax-based detection:** Avoids false edges from markings  
+- **ROI-based scaling:** Makes system container-independent  
+- **Thresholding:** Prevents noise when container is empty  
+
+---
+
+## 📁 Output Files
+
+- `calibration.json` → Calibration parameters  
+- `level_log.csv` → Timestamped readings  
+- `analysis_report.png` → Performance visualization  
+
+---
+
+## 🔬 Why Non-Contact?
+
+The system uses only a webcam placed 20–40 cm away from the container.  
+No physical sensor interacts with the liquid, making it ideal for:
+
+- hazardous liquids  
+- sterile environments  
+- corrosive substances  
+
+---
+
+## 🏁 Conclusion
+
+This project demonstrates how computer vision can replace traditional sensors for measurement tasks, offering a scalable and flexible solution for real-world applications.
+
+---
+
+## 📌 Future Improvements
+
+- Improve FPS with optimized processing  
+- Add multi-container detection  
+- Integrate deep learning-based segmentation  
+- Deploy as real-time web application  
+
+---
