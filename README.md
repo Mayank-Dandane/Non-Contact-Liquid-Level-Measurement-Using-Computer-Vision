@@ -5,6 +5,8 @@ A real-time, non-contact liquid level measurement system using a standard USB we
 <p align="center">
   <img src="./assets/demo.gif" alt="Project Demo" width="900">
 </p>
+
+---
 ## 🚀 Overview
 
 This project uses computer vision techniques to measure liquid levels in real time. By analyzing video frames from a webcam, the system identifies the liquid surface and converts pixel data into real-world measurements.
