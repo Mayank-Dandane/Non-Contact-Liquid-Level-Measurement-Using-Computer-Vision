@@ -1,12 +1,10 @@
 # 🧪 Non-Contact Liquid Level Measurement using Computer Vision
 
-A real-time, non-contact liquid level measurement system using a standard USB webcam and Python-based image processing. The system detects the water surface in a transparent container and outputs the level in millimeters — without any physical sensor.
+A real-time, non-contact liquid level measurement system using a standard USB webcam and Python-based image processing.
 
----
 <p align="center">
-  <img src="assets/demo.gif" width="1000">
+  <img src="./assets/demo.gif" alt="Project Demo" width="900">
 </p>
-
 ## 🚀 Overview
 
 This project uses computer vision techniques to measure liquid levels in real time. By analyzing video frames from a webcam, the system identifies the liquid surface and converts pixel data into real-world measurements.
